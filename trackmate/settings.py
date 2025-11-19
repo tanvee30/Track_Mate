@@ -29,6 +29,7 @@ INSTALLED_APPS = [
 
     # Your app
     "auth_app",
+    "trip_tracking",
 ]
 
 # Custom user model
