@@ -29,7 +29,7 @@ INSTALLED_APPS = [
 
     # Your app
     "auth_app",
-    "trip_tracking",
+    "trips",
 ]
 
 # Custom user model
@@ -139,3 +139,8 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # DEFAULT AUTO FIELD
 # -------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+GOOGLE_MAPS_API_KEY = "AIzaSyB5K4jC0T_r3R43lfwP55vxt3lXNf-E-lk"
+GOOGLE_GEOCODING_API_KEY = "AIzaSyCIuctlZtylqWYpH8NZ_y8hdqQ0P5JhlHM"
+GOOGLE_DIRECTIONS_API_KEY = "AIzaSyDFTdr7PpBNjhE6yufD7mRfLu5yEoIV9SI"
