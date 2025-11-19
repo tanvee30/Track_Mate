@@ -9,8 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # BASIC CONFIG
 # -------------------------
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
-ALLOWED_HOSTS = ["*"]
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"  # Changed default to False for production
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
 # -------------------------
 # INSTALLED APPS
@@ -69,7 +69,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "trackmate.wsgi.application"
-ASGI_APPLICATION = "TrackMate.asgi.application"
+ASGI_APPLICATION = "trackmate.asgi.application"
 
 # -------------------------
 # DATABASE (SQLite)
@@ -100,7 +100,7 @@ USE_I18N = True
 USE_TZ = True
 
 # -------------------------
-# STATIC FILES (FIXED)
+# STATIC FILES
 # -------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"

@@ -1,22 +1,14 @@
-# """
-# ASGI config for TrackMate project.
-#
-# It exposes the ASGI callable as a module-level variable named ``application``.
-#
-# For more information on this file, see
-# https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
-# """
-#
-# import os
-#
-# from django.core.asgi import get_asgi_application
-#
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'TrackMate.settings')
-#
-# application = get_asgi_application()
+"""
+ASGI config for trackmate project.
+
+It exposes the ASGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
+"""
 
 import os
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "TrackMate.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "trackmate.settings")
 application = get_asgi_application()
