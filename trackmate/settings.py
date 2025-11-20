@@ -1,7 +1,14 @@
 import os
+from dotenv import load_dotenv
 from pathlib import Path
 from datetime import timedelta
 from django.core.management.utils import get_random_secret_key
+import dj_database_url
+
+
+
+load_dotenv()
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,6 +29,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
+
 
     # Third-party
     "rest_framework",
@@ -45,7 +54,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 ROOT_URLCONF = "trackmate.urls"
 
@@ -74,12 +89,24 @@ ASGI_APPLICATION = "trackmate.asgi.application"
 # -------------------------
 # DATABASE (SQLite)
 # -------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+
+if os.environ.get("DATABASE_URL"):
+    # Use PostgreSQL on Railway
+    DATABASES = {
+        "default": dj_database_url.config(
+            conn_max_age=600,
+            ssl_require=False,
+        )
     }
-}
+else:
+    # Use SQLite locally
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
 
 # -------------------------
 # PASSWORD VALIDATION
@@ -128,9 +155,10 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "teamyuktek@gmail.com")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "kavk rydz yebl cibq")
+
+
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
