@@ -171,7 +171,169 @@ class Trip(models.Model):
         ]
         return sum(costs)
 
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator
+from django.utils import timezone
 
+class PlannedTrip(models.Model):
+    STATUS_CHOICES = [
+        ('planned', 'Planned'),
+        ('started', 'Started'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    # User relationship
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='planned_trips')
+    
+    # Basic trip information
+    trip_name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planned')
+    
+    # Date and time
+    planned_start_date = models.DateTimeField()
+    planned_end_date = models.DateTimeField(blank=True, null=True)
+    
+    # Start location information
+    start_location_name = models.CharField(max_length=255)
+    start_location_address = models.TextField()
+    start_latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    start_longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    
+    # Destination information
+    destination_name = models.CharField(max_length=255)
+    destination_address = models.TextField()
+    destination_latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    destination_longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    
+    # Trip estimates
+    estimated_distance_km = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Estimated distance in kilometers"
+    )
+    estimated_duration_minutes = models.IntegerField(
+        blank=True, 
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Estimated duration in minutes"
+    )
+    
+    # Optional waypoints (stored as JSON)
+    waypoints = models.JSONField(
+        blank=True, 
+        null=True,
+        help_text="List of intermediate stops with coordinates"
+    )
+    
+    # Trip planning details (matching Trip model fields)
+    mode_of_travel = models.CharField(
+        max_length=20, 
+        choices=[
+            ('walk', 'Walking'),
+            ('bike', 'Bicycle'),
+            ('car', 'Car'),
+            ('bus', 'Bus'),
+            ('train', 'Train'),
+            ('metro', 'Metro'),
+            ('auto', 'Auto Rickshaw'),
+            ('bike_taxi', 'Bike Taxi'),
+            ('other', 'Other'),
+        ],
+        blank=True, 
+        null=True
+    )
+    
+    trip_purpose = models.CharField(
+        max_length=50,
+        choices=[
+            ('work', 'Work/Office'),
+            ('education', 'Education'),
+            ('shopping', 'Shopping'),
+            ('social', 'Social/Recreation'),
+            ('medical', 'Medical'),
+            ('personal', 'Personal Business'),
+            ('other', 'Other'),
+        ],
+        blank=True,
+        null=True
+    )
+    
+    number_of_companions = models.IntegerField(default=0)
+    
+    # Budget planning
+    estimated_budget = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        validators=[MinValueValidator(0)]
+    )
+    
+    # Notes
+    notes = models.TextField(blank=True, null=True)
+    
+    # Saved route information (from preview)
+    route_polyline = models.TextField(blank=True, null=True)
+    
+    # Link to actual trip when started
+    actual_trip = models.OneToOneField(
+        'Trip',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='planned_trip'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-planned_start_date']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['planned_start_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.trip_name} - {self.planned_start_date.date()}"
+    
+    @property
+    def is_upcoming(self):
+        return self.planned_start_date > timezone.now() and self.status == 'planned'
+    
+    @property
+    def is_past(self):
+        return self.planned_start_date < timezone.now() and self.status == 'planned'
+    
+    @property
+    def estimated_co2_kg(self):
+        """Calculate estimated CO2 emissions"""
+        if not self.estimated_distance_km or not self.mode_of_travel:
+            return None
+        
+        emission_factors = {
+            'walk': 0,
+            'bike': 0,
+            'car': 0.192,
+            'bus': 0.089,
+            'train': 0.041,
+            'metro': 0.030,
+            'auto': 0.150,
+            'bike_taxi': 0.084,
+            'other': 0.150,
+        }
+        
+        factor = emission_factors.get(self.mode_of_travel, 0)
+        emission = float(self.estimated_distance_km) * factor
+        return round(emission, 2)
+    
 class TripLocation(models.Model):
     """Model to store intermediate GPS tracking points during trip"""
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name='tracking_points')
@@ -203,3 +365,5 @@ class TripNote(models.Model):
     
     def __str__(self):
         return f"Note for {self.trip.trip_number}"
+    
+

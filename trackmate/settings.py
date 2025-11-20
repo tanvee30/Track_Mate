@@ -9,8 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # BASIC CONFIG
 # -------------------------
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"  # Changed default to False for production
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+ALLOWED_HOSTS = ["*"]
 
 # -------------------------
 # INSTALLED APPS
@@ -70,7 +70,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "trackmate.wsgi.application"
-ASGI_APPLICATION = "trackmate.asgi.application"
+ASGI_APPLICATION = "TrackMate.asgi.application"
 
 # -------------------------
 # DATABASE (SQLite)
@@ -101,7 +101,7 @@ USE_I18N = True
 USE_TZ = True
 
 # -------------------------
-# STATIC FILES
+# STATIC FILES (FIXED)
 # -------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -139,7 +139,6 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # DEFAULT AUTO FIELD
 # -------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 
 GOOGLE_MAPS_API_KEY = "AIzaSyB5K4jC0T_r3R43lfwP55vxt3lXNf-E-lk"
 GOOGLE_GEOCODING_API_KEY = "AIzaSyCIuctlZtylqWYpH8NZ_y8hdqQ0P5JhlHM"

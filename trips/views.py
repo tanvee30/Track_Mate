@@ -726,4 +726,3 @@ def manage_note(self, request, pk=None, note_id=None):
         )
     
 
-        

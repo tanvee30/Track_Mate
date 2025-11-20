@@ -132,3 +132,60 @@ class TripNoteAdmin(admin.ModelAdmin):
     list_display = ['trip', 'note_text', 'created_at']
     search_fields = ['trip__trip_number', 'note_text']
     list_filter = ['created_at']
+
+
+
+from django.contrib import admin
+from .models import Trip, TripLocation, TripNote, PlannedTrip
+
+@admin.register(PlannedTrip)
+class PlannedTripAdmin(admin.ModelAdmin):
+    list_display = [
+        'id', 'trip_name', 'user', 'status', 
+        'planned_start_date', 'start_location_name', 
+        'destination_name', 'created_at'
+    ]
+    list_filter = ['status', 'mode_of_travel', 'trip_purpose']
+    search_fields = ['trip_name', 'start_location_name', 'destination_name']
+    date_hierarchy = 'planned_start_date'
+    
+    readonly_fields = ['created_at', 'updated_at', 'estimated_co2_kg']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('user', 'trip_name', 'description', 'status')
+        }),
+        ('Schedule', {
+            'fields': ('planned_start_date', 'planned_end_date')
+        }),
+        ('Start Location', {
+            'fields': (
+                'start_location_name', 'start_location_address',
+                'start_latitude', 'start_longitude'
+            )
+        }),
+        ('Destination', {
+            'fields': (
+                'destination_name', 'destination_address',
+                'destination_latitude', 'destination_longitude'
+            )
+        }),
+        ('Trip Details', {
+            'fields': (
+                'mode_of_travel', 'trip_purpose', 'number_of_companions',
+                'estimated_budget', 'notes'
+            )
+        }),
+        ('Route Information', {
+            'fields': (
+                'estimated_distance_km', 'estimated_duration_minutes',
+                'estimated_co2_kg', 'route_polyline', 'waypoints'
+            )
+        }),
+        ('Actual Trip Link', {
+            'fields': ('actual_trip',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
