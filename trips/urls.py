@@ -14,7 +14,7 @@ urlpatterns = [
     path('', include(router.urls)),
 ]
 
-# Available endpoints will now be:
+# Available endpoints 
 # POST   /api/trips/start/                    - Start a new trip
 # POST   /api/trips/{id}/end/                 - End a trip
 # POST   /api/trips/{id}/add-tracking-point/  - Add GPS tracking point
