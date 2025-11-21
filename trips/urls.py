@@ -1,11 +1,15 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TripViewSet
+from .views import TripViewSet, PlannedTripViewSet
 
-# Create router and register viewsets
+# Create router
 router = DefaultRouter()
-router.register(r'', TripViewSet, basename='trip')  # ← Changed 'trips' to ''
 
+# Register viewsets
+router.register(r'trips', TripViewSet, basename='trip')
+router.register(r'planned-trips', PlannedTripViewSet, basename='planned-trip')
+
+# URL patterns
 urlpatterns = [
     path('', include(router.urls)),
 ]
@@ -21,3 +25,11 @@ urlpatterns = [
 # GET    /api/trips/{id}/                     - Get specific trip
 # POST   /api/trips/create-manual/            - Create trip manually
 # POST   /api/trips/preview-route/            - Preview route before saving
+# GET /api/planned-trips/                     - List all planned trips
+# POST /api/planned-trips/                    - Create new planned trip
+# GET /api/planned-trips/{id}/                - Get specific planned trip details
+# PUT/PATCH /api/planned-trips/{id}/          - Update planned trip
+# DELETE /api/planned-trips/{id}/             - Delete planned trip
+# GET /api/planned-trips/upcoming/            - Get upcoming trips
+# POST /api/planned-trips/{id}/start_trip/    - Start the trip
+# POST /api/planned-trips/{id}/cancel/        - Cancel the trip

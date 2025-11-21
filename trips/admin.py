@@ -141,15 +141,16 @@ from .models import Trip, TripLocation, TripNote, PlannedTrip
 @admin.register(PlannedTrip)
 class PlannedTripAdmin(admin.ModelAdmin):
     list_display = [
-        'id', 'trip_name', 'user', 'status', 
-        'planned_start_date', 'start_location_name', 
-        'destination_name', 'created_at'
+        'id', 'trip_name', 'user', 'status',
+        'planned_start_date',
+        'get_estimated_co2',  # <-- Changed
+        'start_location_name', 'destination_name', 'created_at'
     ]
     list_filter = ['status', 'mode_of_travel', 'trip_purpose']
     search_fields = ['trip_name', 'start_location_name', 'destination_name']
     date_hierarchy = 'planned_start_date'
     
-    readonly_fields = ['created_at', 'updated_at', 'estimated_co2_kg']
+    readonly_fields = ['created_at', 'updated_at', 'get_estimated_co2']  # <-- Changed
     
     fieldsets = (
         ('Basic Information', {
@@ -179,7 +180,8 @@ class PlannedTripAdmin(admin.ModelAdmin):
         ('Route Information', {
             'fields': (
                 'estimated_distance_km', 'estimated_duration_minutes',
-                'estimated_co2_kg', 'route_polyline', 'waypoints'
+                'get_estimated_co2',  # <-- Changed
+                'route_polyline', 'waypoints'
             )
         }),
         ('Actual Trip Link', {
@@ -189,3 +191,8 @@ class PlannedTripAdmin(admin.ModelAdmin):
             'fields': ('created_at', 'updated_at')
         }),
     )
+    
+    # Add this method
+    def get_estimated_co2(self, obj):
+        return obj.estimated_co2_kg if obj.estimated_co2_kg else '-'
+    get_estimated_co2.short_description = 'Estimated CO2 (kg)'
