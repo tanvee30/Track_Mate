@@ -890,3 +890,6 @@ def reset_password(request):
     otp_obj.used = True
     otp_obj.save()
     return Response({"message": "Password reset successful"})
+
+
+

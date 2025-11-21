@@ -586,3 +586,64 @@ class PlannedTripViewSet(viewsets.ModelViewSet):
             print(f"Directions API error: {str(e)}")
         return None
     
+
+
+from django.http import JsonResponse
+from pinecone import Pinecone, ServerlessSpec
+import time
+
+PINECONE_API_KEY = "pcsk_6VACAa_JcWnS9SD5f67WaYoNE6C6XTACDAH3zVBcsPrGm2cq8yiNDhwo6UD9eaBH2omKHk"
+
+pc = Pinecone(api_key=PINECONE_API_KEY)
+
+INDEX_NAME = "travel-expenses"
+
+
+if INDEX_NAME not in pc.list_indexes().names():
+    pc.create_index(
+        name=INDEX_NAME,
+        dimension=4,
+        metric="euclidean",
+        spec=ServerlessSpec(cloud="aws", region="us-east-1")
+    )
+
+index = pc.Index(INDEX_NAME)
+
+
+def save_travel_data(request):
+    if request.method == "POST":
+        user_id = request.POST.get("user_id")
+        mode = request.POST.get("mode_of_transport")
+        distance = float(request.POST.get("distance"))
+        fuel_cost = float(request.POST.get("fuel_cost"))
+        toll_cost = float(request.POST.get("toll_cost"))
+        number_of_tolls = int(request.POST.get("number_of_tolls"))
+
+        vector = [
+            distance,
+            fuel_cost,
+            toll_cost,
+            number_of_tolls
+        ]
+
+        metadata = {
+            "mode_of_transport": mode,
+            "distance": distance,
+            "fuel_cost": fuel_cost,
+            "toll_cost": toll_cost,
+            "number_of_tolls": number_of_tolls
+        }
+
+        index.upsert(
+            vectors=[
+                {
+                    "id": f"{user_id}_{time.time()}",
+                    "values": vector,
+                    "metadata": metadata
+                }
+            ]
+        )
+
+        return JsonResponse({"status": "success", "message": "Data stored in Pinecone"})
+
+    return JsonResponse({"status": "error", "message": "POST only"})

@@ -1,6 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import TripViewSet, PlannedTripViewSet
+from django.urls import path
+from .views import save_travel_data
 
 # Create router
 router = DefaultRouter()
@@ -12,6 +14,7 @@ router.register(r'planned-trips', PlannedTripViewSet, basename='planned-trip')
 # URL patterns
 urlpatterns = [
     path('', include(router.urls)),
+    path("save-travel/", save_travel_data, name="save_travel"),
 ]
 
 # Available endpoints will now be:
@@ -33,3 +36,4 @@ urlpatterns = [
 # GET /api/planned-trips/upcoming/            - Get upcoming trips
 # POST /api/planned-trips/{id}/start_trip/    - Start the trip
 # POST /api/planned-trips/{id}/cancel/        - Cancel the trip
+
