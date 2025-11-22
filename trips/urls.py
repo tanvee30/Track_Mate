@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TripViewSet, PlannedTripViewSet
+from .views import TripViewSet, PlannedTripViewSet,DailyStatsViewSet, VehicleViewSet
 
 # Create router
 router = DefaultRouter()
@@ -8,6 +8,8 @@ router = DefaultRouter()
 # Register viewsets
 router.register(r'trips', TripViewSet, basename='trip')
 router.register(r'planned-trips', PlannedTripViewSet, basename='planned-trip')
+router.register(r'trips/stats', DailyStatsViewSet, basename='daily-stats')
+router.register(r'vehicles', VehicleViewSet, basename='vehicles')
 
 # URL patterns
 urlpatterns = [
@@ -33,3 +35,14 @@ urlpatterns = [
 # GET /api/planned-trips/upcoming/            - Get upcoming trips
 # POST /api/planned-trips/{id}/start_trip/    - Start the trip
 # POST /api/planned-trips/{id}/cancel/        - Cancel the trip
+# Daily Stats:
+# - GET /api/trips/stats/daily-score/?date=2025-11-21
+# - GET /api/trips/stats/calendar-stats/?month=11&year=2025
+# - GET /api/trips/stats/monthly-chart/?month=11&year=2025
+
+# Vehicle Management:
+# - GET    /api/vehicles/          - List user's vehicles
+# - POST   /api/vehicles/          - Create new vehicle
+# - GET    /api/vehicles/{id}/     - Get vehicle details
+# - PUT    /api/vehicles/{id}/     - Update vehicle
+# - DELETE /api/vehicles/{id}/     - Delete vehicle

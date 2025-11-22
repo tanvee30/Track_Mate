@@ -586,3 +586,394 @@ class PlannedTripViewSet(viewsets.ModelViewSet):
             print(f"Directions API error: {str(e)}")
         return None
     
+
+
+# ==================== views.py ====================
+# Add this ViewSet to your existing views.py
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Sum, Count
+from django.utils import timezone
+from datetime import datetime, timedelta
+import calendar
+from decimal import Decimal
+
+from .models import Trip, DailyStats, Vehicle
+from .serializers import (
+    DailyScoreSerializer, CalendarStatsSerializer, 
+    MonthlyChartSerializer, VehicleSerializer
+)
+
+
+class DailyStatsViewSet(viewsets.ViewSet):
+    """ViewSet for daily statistics and analytics"""
+    permission_classes = [IsAuthenticated]
+    
+    def _calculate_score(self, distance, co2, fuel_cost, trips_count):
+        """
+        Calculate daily score (0-100) based on multiple factors
+        Lower emissions and cost = higher score
+        More trips = more engagement bonus
+        """
+        if distance == 0:
+            return 0
+        
+        # Normalize metrics (adjust these thresholds based on your app's typical usage)
+        # Example thresholds for a "good" day:
+        # - Distance: 20-50 km is typical
+        # - CO2: < 2000g per day is good
+        # - Cost: < 200 per day is good
+        
+        # Efficiency score (40 points max)
+        # Lower CO2 per km = higher score
+        co2_per_km = (co2 / distance) if distance > 0 else 0
+        if co2_per_km < 50:  # Very efficient (walk, bike, public transport)
+            efficiency_score = 40
+        elif co2_per_km < 100:  # Good
+            efficiency_score = 30
+        elif co2_per_km < 150:  # Average
+            efficiency_score = 20
+        else:  # Needs improvement
+            efficiency_score = 10
+        
+        # Cost efficiency score (30 points max)
+        cost_per_km = (fuel_cost / distance) if distance > 0 else 0
+        if cost_per_km < 5:  # Very economical
+            cost_score = 30
+        elif cost_per_km < 10:  # Good
+            cost_score = 20
+        elif cost_per_km < 15:  # Average
+            cost_score = 15
+        else:  # Expensive
+            cost_score = 5
+        
+        # Activity bonus (30 points max)
+        # More trips tracked = more engagement
+        activity_score = min(30, trips_count * 10)
+        
+        total_score = int(efficiency_score + cost_score + activity_score)
+        return min(100, max(0, total_score))
+    
+    def _calculate_emissions_from_trip(self, trip):
+        """Calculate CO2 emissions for a trip in grams"""
+        if not trip.distance_km:
+            return 0
+        
+        distance = float(trip.distance_km)
+        
+        # Check if user has a vehicle configured
+        vehicle = Vehicle.objects.filter(user=trip.user, is_active=True).first()
+        
+        # If vehicle exists and trip mode matches vehicle type, use vehicle's emissions
+        if vehicle and trip.mode_of_travel in ['car', 'bike', 'scooter']:
+            return distance * vehicle.emissions_factor
+        
+        # Otherwise use the trip's calculated CO2 or standard factors
+        if trip.co2_emission_kg:
+            return float(trip.co2_emission_kg) * 1000  # Convert kg to grams
+        
+        # Fallback to mode-based calculation
+        emission_factors = {
+            'walk': 0, 'bike': 0, 'car': 120, 'bus': 89,
+            'train': 41, 'metro': 30, 'auto': 150,
+            'bike_taxi': 84, 'other': 150,
+        }
+        factor = emission_factors.get(trip.mode_of_travel, 120)
+        return distance * factor
+    
+    def _calculate_fuel_cost_from_trip(self, trip):
+        """Calculate fuel cost for a trip"""
+        # If trip already has fuel_expense, use that
+        if trip.fuel_expense:
+            return float(trip.fuel_expense)
+        
+        if not trip.distance_km:
+            return 0
+        
+        distance = float(trip.distance_km)
+        
+        # Check if user has a vehicle configured
+        vehicle = Vehicle.objects.filter(user=trip.user, is_active=True).first()
+        
+        if vehicle and trip.mode_of_travel in ['car', 'bike', 'scooter']:
+            # Calculate based on vehicle's fuel efficiency
+            liters_used = distance / vehicle.fuel_efficiency
+            return liters_used * float(vehicle.fuel_price_per_liter)
+        
+        # Fallback: estimate based on mode
+        cost_per_km = {
+            'walk': 0, 'bike': 0, 'car': 8, 'bus': 3,
+            'train': 2, 'metro': 2.5, 'auto': 12,
+            'bike_taxi': 10, 'other': 8,
+        }
+        rate = cost_per_km.get(trip.mode_of_travel, 8)
+        return distance * rate
+    
+    def _get_or_calculate_daily_stats(self, user, date):
+        """Get cached stats or calculate fresh from trips"""
+        try:
+            stats = DailyStats.objects.get(user=user, date=date)
+            return {
+                'score': stats.score,
+                'date': stats.date,
+                'distance_travelled': stats.total_distance,
+                'co2_emissions': stats.total_co2,
+                'fuel_cost': stats.total_fuel_cost,
+                'trips_count': stats.trips_count
+            }
+        except DailyStats.DoesNotExist:
+            # Calculate from trips
+            trips = Trip.objects.filter(
+                user=user,
+                start_time__date=date,
+                status='completed'  # Only count completed trips
+            )
+            
+            total_distance = 0
+            total_co2 = 0
+            total_fuel_cost = 0
+            trips_count = trips.count()
+            
+            # Calculate totals from all trips
+            for trip in trips:
+                if trip.distance_km:
+                    total_distance += float(trip.distance_km)
+                
+                total_co2 += self._calculate_emissions_from_trip(trip)
+                total_fuel_cost += self._calculate_fuel_cost_from_trip(trip)
+            
+            # Calculate score
+            score = self._calculate_score(
+                total_distance, 
+                total_co2, 
+                total_fuel_cost, 
+                trips_count
+            )
+            
+            # Cache the result only if there were trips
+            if trips_count > 0:
+                DailyStats.objects.update_or_create(
+                    user=user,
+                    date=date,
+                    defaults={
+                        'score': score,
+                        'total_distance': total_distance,
+                        'total_co2': total_co2,
+                        'total_fuel_cost': total_fuel_cost,
+                        'trips_count': trips_count
+                    }
+                )
+            
+            return {
+                'score': score,
+                'date': date,
+                'distance_travelled': total_distance,
+                'co2_emissions': total_co2,
+                'fuel_cost': total_fuel_cost,
+                'trips_count': trips_count
+            }
+    
+    @action(detail=False, methods=['get'], url_path='daily-score')
+    def daily_score(self, request):
+        """
+        GET /api/trips/daily-score/
+        Query params: 
+            - date (optional, format: YYYY-MM-DD, defaults to today)
+        
+        Returns today's/specified day's score and stats for the Daily Score screen
+        """
+        date_param = request.query_params.get('date')
+        
+        if date_param:
+            try:
+                target_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            except ValueError:
+                return Response(
+                    {'error': 'Invalid date format. Use YYYY-MM-DD'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            target_date = timezone.now().date()
+        
+        stats = self._get_or_calculate_daily_stats(request.user, target_date)
+        serializer = DailyScoreSerializer(stats)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='calendar-stats')
+    def calendar_stats(self, request):
+        """
+        GET /api/trips/calendar-stats/
+        Query params: 
+            - month (1-12, defaults to current month)
+            - year (YYYY, defaults to current year)
+        
+        Returns calendar view with scores for each day in the month
+        For the calendar widget showing November 2025
+        """
+        try:
+            month = int(request.query_params.get('month', timezone.now().month))
+            year = int(request.query_params.get('year', timezone.now().year))
+            
+            if month < 1 or month > 12:
+                return Response(
+                    {'error': 'Month must be between 1 and 12'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'Invalid month or year'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get all days in the month
+        num_days = calendar.monthrange(year, month)[1]
+        days_data = []
+        
+        for day in range(1, num_days + 1):
+            date = datetime(year, month, day).date()
+            
+            # Check if there are any completed trips on this day
+            trips_count = Trip.objects.filter(
+                user=request.user,
+                start_time__date=date,
+                status='completed'
+            ).count()
+            
+            has_trips = trips_count > 0
+            
+            if has_trips:
+                stats = self._get_or_calculate_daily_stats(request.user, date)
+                score = stats['score']
+            else:
+                score = 0
+            
+            days_data.append({
+                'date': date,
+                'score': score,
+                'has_trips': has_trips,
+                'trips_count': trips_count
+            })
+        
+        response_data = {
+            'month': calendar.month_name[month],
+            'year': year,
+            'days': days_data
+        }
+        
+        serializer = CalendarStatsSerializer(response_data)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='monthly-chart')
+    def monthly_chart(self, request):
+        """
+        GET /api/trips/monthly-chart/
+        Query params: 
+            - month (1-12, defaults to current month)
+            - year (YYYY, defaults to current year)
+        
+        Returns chart data for distance/CO2/cost for the bottom section charts
+        """
+        try:
+            month = int(request.query_params.get('month', timezone.now().month))
+            year = int(request.query_params.get('year', timezone.now().year))
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'Invalid month or year'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get stats for the entire month
+        start_date = datetime(year, month, 1).date()
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1).date()
+        else:
+            end_date = datetime(year, month + 1, 1).date()
+        
+        # Get all stats for the month
+        stats_qs = DailyStats.objects.filter(
+            user=request.user,
+            date__gte=start_date,
+            date__lt=end_date
+        ).order_by('date')
+        
+        distance_data = []
+        co2_data = []
+        cost_data = []
+        
+        # If no cached stats, calculate on the fly
+        if not stats_qs.exists():
+            current_date = start_date
+            while current_date < end_date:
+                stats = self._get_or_calculate_daily_stats(request.user, current_date)
+                
+                if stats['trips_count'] > 0:  # Only include days with trips
+                    distance_data.append({
+                        'date': current_date,
+                        'value': stats['distance_travelled']
+                    })
+                    co2_data.append({
+                        'date': current_date,
+                        'value': stats['co2_emissions']
+                    })
+                    cost_data.append({
+                        'date': current_date,
+                        'value': stats['fuel_cost']
+                    })
+                
+                current_date += timedelta(days=1)
+        else:
+            for stat in stats_qs:
+                distance_data.append({
+                    'date': stat.date,
+                    'value': stat.total_distance
+                })
+                co2_data.append({
+                    'date': stat.date,
+                    'value': stat.total_co2
+                })
+                cost_data.append({
+                    'date': stat.date,
+                    'value': stat.total_fuel_cost
+                })
+        
+        response_data = {
+            'distance': distance_data,
+            'co2_emissions': co2_data,
+            'fuel_cost': cost_data
+        }
+        
+        serializer = MonthlyChartSerializer(response_data)
+        return Response(serializer.data)
+
+
+class VehicleViewSet(viewsets.ModelViewSet):
+    """CRUD operations for user vehicles"""
+    serializer_class = VehicleSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Vehicle.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        # If this is set as active, deactivate other vehicles
+        if serializer.validated_data.get('is_active', False):
+            Vehicle.objects.filter(
+                user=self.request.user, 
+                is_active=True
+            ).update(is_active=False)
+        
+        serializer.save(user=self.request.user)
+    
+    def perform_update(self, serializer):
+        # If this is set as active, deactivate other vehicles
+        if serializer.validated_data.get('is_active', False):
+            Vehicle.objects.filter(
+                user=self.request.user, 
+                is_active=True
+            ).exclude(id=self.get_object().id).update(is_active=False)
+        
+        serializer.save()
+

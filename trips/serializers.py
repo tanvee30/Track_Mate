@@ -416,3 +416,57 @@ class PlannedTripCreateSerializer(serializers.Serializer):
             )
         
         return data
+    
+
+# ==================== serializers.py ====================
+# Create a new file called serializers.py or add to existing one
+
+from rest_framework import serializers
+from .models import Trip, DailyStats, Vehicle
+
+class DailyScoreSerializer(serializers.Serializer):
+    """Serializer for daily score data"""
+    score = serializers.IntegerField()
+    date = serializers.DateField()
+    distance_travelled = serializers.FloatField(help_text="in kilometers")
+    co2_emissions = serializers.FloatField(help_text="in grams")
+    fuel_cost = serializers.FloatField(help_text="in currency")
+    trips_count = serializers.IntegerField()
+
+
+class CalendarDaySerializer(serializers.Serializer):
+    """Individual day data for calendar"""
+    date = serializers.DateField()
+    score = serializers.IntegerField()
+    has_trips = serializers.BooleanField()
+    trips_count = serializers.IntegerField()
+
+
+class CalendarStatsSerializer(serializers.Serializer):
+    """Calendar view with monthly data"""
+    month = serializers.CharField()
+    year = serializers.IntegerField()
+    days = CalendarDaySerializer(many=True)
+
+
+class ChartDataPointSerializer(serializers.Serializer):
+    """Single data point for charts"""
+    date = serializers.DateField()
+    value = serializers.FloatField()
+
+
+class MonthlyChartSerializer(serializers.Serializer):
+    """Data for the monthly chart display"""
+    distance = ChartDataPointSerializer(many=True)
+    co2_emissions = ChartDataPointSerializer(many=True)
+    fuel_cost = ChartDataPointSerializer(many=True)
+
+
+class VehicleSerializer(serializers.ModelSerializer):
+    """Serializer for Vehicle model"""
+    class Meta:
+        model = Vehicle
+        fields = ['id', 'name', 'vehicle_type', 'fuel_efficiency', 
+                  'emissions_factor', 'fuel_price_per_liter', 'is_active']
+        read_only_fields = ['id']
+

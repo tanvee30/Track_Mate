@@ -340,3 +340,63 @@ class TripNote(models.Model):
     
     def __str__(self):
         return f"Note for {self.trip.trip_number}"
+    
+
+# ==================== models.py ====================
+# Add these new models to your existing models.py file
+
+from django.db import models
+from django.conf import settings
+
+class Vehicle(models.Model):
+    """Store vehicle information for emissions/cost calculation"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='vehicles')
+    name = models.CharField(max_length=100, help_text="e.g., 'My Honda City'")
+    vehicle_type = models.CharField(max_length=50, choices=[
+        ('car', 'Car'),
+        ('bike', 'Bike'),
+        ('scooter', 'Scooter'),
+        ('electric', 'Electric Vehicle')
+    ])
+    fuel_efficiency = models.FloatField(help_text="km per liter", default=15.0)
+    emissions_factor = models.FloatField(
+        help_text="grams of CO2 per km", 
+        default=120.0
+    )
+    fuel_price_per_liter = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=100.0,
+        help_text="Current fuel price per liter"
+    )
+    is_active = models.BooleanField(default=True, help_text="Currently used vehicle")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-is_active', '-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+
+class DailyStats(models.Model):
+    """Cache daily statistics for performance"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='daily_stats')
+    date = models.DateField()
+    score = models.IntegerField(default=0)
+    total_distance = models.FloatField(default=0, help_text="in kilometers")
+    total_co2 = models.FloatField(default=0, help_text="in grams")
+    total_fuel_cost = models.FloatField(default=0, help_text="in currency")
+    trips_count = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('user', 'date')
+        ordering = ['-date']
+        verbose_name_plural = "Daily Stats"
+        
+    def __str__(self):
+        return f"{self.user.username} - {self.date} - Score: {self.score}"
+
