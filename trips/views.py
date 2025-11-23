@@ -96,6 +96,17 @@ class TripViewSet(viewsets.ModelViewSet):
             trip.trip_purpose = serializer.validated_data['trip_purpose']
         if 'number_of_companions' in serializer.validated_data:
             trip.number_of_companions = serializer.validated_data['number_of_companions']
+
+        if 'fuel_expense' in serializer.validated_data:
+             trip.fuel_expense = serializer.validated_data['fuel_expense']
+
+        if 'parking_cost' in serializer.validated_data:
+            trip.parking_cost = serializer.validated_data['parking_cost']
+        if 'toll_cost' in serializer.validated_data:
+            trip.toll_cost = serializer.validated_data['toll_cost']
+        if 'ticket_cost' in serializer.validated_data:
+            trip.ticket_cost = serializer.validated_data['ticket_cost']
+    
         
         trip.distance_km = trip.calculate_distance()
         trip.duration_minutes = trip.calculate_duration()
@@ -242,6 +253,10 @@ class TripViewSet(viewsets.ModelViewSet):
             mode_of_travel=data.get('mode_of_travel'), trip_purpose=data.get('trip_purpose'), number_of_companions=data.get('number_of_companions', 0),
             route_polyline=route_data.get('polyline'), suggested_distance_km=route_data.get('distance_km'), suggested_duration_minutes=route_data.get('duration_minutes'),
             distance_km=route_data.get('distance_km'), duration_minutes=route_data.get('duration_minutes'),
+            toll_cost=data.get('toll_cost'),
+            parking_cost=data.get('parking_cost'),
+            fuel_expense=data.get('fuel_expense'),
+            ticket_cost=data.get('ticket_cost'),
         )
         
         trip.co2_emission_kg = trip.calculate_co2_emission()
