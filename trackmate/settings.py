@@ -12,16 +12,10 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# -------------------------
-# BASIC CONFIG
-# -------------------------
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"  # Changed default to False for production
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
-# -------------------------
-# INSTALLED APPS
-# -------------------------
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -32,20 +26,18 @@ INSTALLED_APPS = [
     "corsheaders",
 
 
-    # Third-party
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
 
-    # Your app
     "auth_app",
+    "profile_app",
 ]
 
-# Custom user model
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 AUTH_USER_MODEL = "auth_app.User"
 
-# -------------------------
-# MIDDLEWARE
-# -------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -64,9 +56,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = "trackmate.urls"
 
-# -------------------------
-# TEMPLATES
-# -------------------------
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -84,6 +73,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "trackmate.wsgi.application"
+<<<<<<< HEAD
 ASGI_APPLICATION = "trackmate.asgi.application"
 
 # -------------------------
@@ -97,6 +87,13 @@ if os.environ.get("DATABASE_URL"):
             conn_max_age=600,
             ssl_require=False,
         )
+=======
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+>>>>>>> profile_api
     }
 else:
     # Use SQLite locally
@@ -108,9 +105,6 @@ else:
     }
 
 
-# -------------------------
-# PASSWORD VALIDATION
-# -------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -118,23 +112,20 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# -------------------------
-# INTERNATIONALIZATION
-# -------------------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+<<<<<<< HEAD
 # -------------------------
 # STATIC FILES
 # -------------------------
+=======
+>>>>>>> profile_api
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# -------------------------
-# REST FRAMEWORK + JWT
-# -------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -144,13 +135,8 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
 }
 
-# -------------------------
-# EMAIL CONFIG
-# -------------------------
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
@@ -162,7 +148,4 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "kavk rydz yebl cibq
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# -------------------------
-# DEFAULT AUTO FIELD
-# -------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
