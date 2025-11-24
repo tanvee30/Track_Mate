@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
+load_dotenv()
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -75,10 +78,20 @@ ASGI_APPLICATION = "TrackMate.asgi.application"
 # -------------------------
 # DATABASE (SQLite)
 # -------------------------
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("DB_NAME"),
+        "USER": os.environ.get("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5433"),
     }
 }
 
