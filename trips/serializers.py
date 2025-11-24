@@ -55,7 +55,10 @@ class TripSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['id', 'trip_number', 'created_at', 'updated_at', 'username']
-
+        
+    def get_total_cost(self, obj):
+        """Return calculated total cost"""
+        return float(obj.total_cost) if obj.total_cost else 0.0
 
 class TripStartSerializer(serializers.Serializer):
     """Serializer for starting a trip"""
@@ -66,15 +69,58 @@ class TripStartSerializer(serializers.Serializer):
 
 
 class TripEndSerializer(serializers.Serializer):
-    """Serializer for ending a trip"""
+    """Serializer for ending a trip with ALL details in one call"""
+    
+    # Required fields
     end_latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     end_longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
+    
+    # Optional location
     end_location_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
     end_time = serializers.DateTimeField(required=False)
-    mode_of_travel = serializers.ChoiceField(choices=Trip.MODE_CHOICES, required=False)
-    trip_purpose = serializers.ChoiceField(choices=Trip.PURPOSE_CHOICES, required=False)
-    number_of_companions = serializers.IntegerField(required=False, default=0)
-
+    
+    # Trip details (optional)
+    mode_of_travel = serializers.ChoiceField(
+        choices=Trip.MODE_CHOICES,
+        required=False,
+        allow_null=True
+    )
+    trip_purpose = serializers.ChoiceField(
+        choices=Trip.PURPOSE_CHOICES,
+        required=False,
+        allow_null=True
+    )
+    number_of_companions = serializers.IntegerField(
+        required=False,
+        default=0,
+        min_value=0
+    )
+    
+    # ADD THESE NEW FIELDS
+    fuel_expense = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True
+    )
+    parking_cost = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True
+    )
+    toll_cost = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True
+    )
+    ticket_cost = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True
+    )
 
 class TripUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating trip details"""
@@ -160,6 +206,10 @@ class ManualTripSerializer(serializers.Serializer):
         default=0,
         help_text="How many people with you?"
     )
+    toll_cost = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+    parking_cost = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+    fuel_expense = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+    ticket_cost = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
     
     def validate(self, data):
         """Ensure we have either address or coordinates for both start and end"""
