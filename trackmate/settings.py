@@ -587,6 +587,9 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
+load_dotenv()
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -606,6 +609,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
 
     "auth_app",
+    "trips",
     "profile_app",
 ]
 
@@ -643,11 +647,25 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "trackmate.wsgi.application"
+ASGI_APPLICATION = "TrackMate.asgi.application"
 
+# -------------------------
+# DATABASE (SQLite)
+# -------------------------
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("DB_NAME"),
+        "USER": os.environ.get("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5433"),
     }
 }
 
@@ -663,6 +681,9 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+# -------------------------
+# STATIC FILES (FIXED)
+# -------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -688,3 +709,7 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "kavk rydz yebl cibq
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+GOOGLE_MAPS_API_KEY = "AIzaSyB5K4jC0T_r3R43lfwP55vxt3lXNf-E-lk"
+GOOGLE_GEOCODING_API_KEY = "AIzaSyCIuctlZtylqWYpH8NZ_y8hdqQ0P5JhlHM"
+GOOGLE_DIRECTIONS_API_KEY = "AIzaSyDFTdr7PpBNjhE6yufD7mRfLu5yEoIV9SI"
