@@ -664,7 +664,7 @@ DATABASES = {
         "NAME": 'trackmate_db',
         "USER": 'trackmate_user',
         "PASSWORD": 'ATM263014@atm',
-        "HOST": 'localhost,
+        "HOST": 'localhost',
         "PORT": '5432',
     }
 }
