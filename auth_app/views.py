@@ -832,6 +832,24 @@ def refresh_token(request):
 
 
 # -----------------------------
+# LOGOUT (Blacklist Refresh Token)
+# -----------------------------
+@api_view(["POST"])
+def logout_view(request):
+    refresh_token = request.data.get("refresh")
+
+    if not refresh_token:
+        return Response({"error": "Refresh token required"}, status=400)
+
+    try:
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response({"message": "Logged out successfully"}, status=200)
+    except Exception:
+        return Response({"error": "Invalid token"}, status=400)
+
+
+# -----------------------------
 # FORGOT PASSWORD (send OTP)
 # -----------------------------
 @api_view(["POST"])
@@ -890,3 +908,5 @@ def reset_password(request):
     otp_obj.used = True
     otp_obj.save()
     return Response({"message": "Password reset successful"})
+
+from .serializers import LogoutSerializer

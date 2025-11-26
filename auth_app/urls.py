@@ -58,4 +58,6 @@ urlpatterns = [
     path("refresh/", views.refresh_token),
     path("forgot-password/", views.forgot_password),
     path("reset-password/", views.reset_password),
+    path("logout/", views.logout_view),
+
 ]
