@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TripViewSet, PlannedTripViewSet,DailyStatsViewSet, VehicleViewSet
+from .views import TripViewSet, PlannedTripViewSet,DailyStatsViewSet, VehicleViewSet, compare_routes
 
 # Create router
 router = DefaultRouter()
@@ -14,6 +14,7 @@ router.register(r'vehicles', VehicleViewSet, basename='vehicles')
 # URL patterns
 urlpatterns = [
     path('', include(router.urls)),
+    path("compare-routes/", compare_routes, name="compare-routes"),
 ]
 
 # Available endpoints 
@@ -46,3 +47,6 @@ urlpatterns = [
 # - GET    /api/vehicles/{id}/     - Get vehicle details
 # - PUT    /api/vehicles/{id}/     - Update vehicle
 # - DELETE /api/vehicles/{id}/     - Delete vehicle
+
+
+#/api/compare-routes/
