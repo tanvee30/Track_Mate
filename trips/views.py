@@ -992,3 +992,164 @@ class VehicleViewSet(viewsets.ModelViewSet):
         
         serializer.save()
 
+
+import math
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+# Haversine formula to calculate distance in KM
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius km
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+    a = (math.sin(d_lat/2)**2 +
+         math.cos(math.radians(lat1)) *
+         math.cos(math.radians(lat2)) *
+         math.sin(d_lon/2)**2)
+    c = 2 * math.asin(math.sqrt(a))
+    return R * c
+
+
+# Fuel type costs per km (in ₹)
+FUEL_COSTS = {
+    "petrol": 9.5,      # ₹9.5/km (assuming 12 km/l, ₹105/l)
+    "diesel": 7.0,      # ₹7/km (assuming 18 km/l, ₹95/l)
+    "cng": 4.5,         # ₹4.5/km (assuming 25 km/kg, ₹85/kg)
+    "electric": 2.5,    # ₹2.5/km (assuming 5 km/kWh, ₹8/kWh)
+}
+
+# CO2 emissions per km (in kg)
+FUEL_EMISSIONS = {
+    "petrol": 0.12,
+    "diesel": 0.10,
+    "cng": 0.08,
+    "electric": 0.05,
+}
+
+
+@api_view(['POST'])
+def compare_routes(request):
+
+    start_lat = request.data.get("start_latitude")
+    start_lon = request.data.get("start_longitude")
+    dest_lat = request.data.get("destination_latitude")
+    dest_lon = request.data.get("destination_longitude")
+
+    if not all([start_lat, start_lon, dest_lat, dest_lon]):
+        return Response({"error": "Missing coordinates"}, status=400)
+
+    # Distance Calculation
+    distance_km = round(calculate_distance(start_lat, start_lon, dest_lat, dest_lon), 2)
+
+    # Car options for all fuel types
+    car_options = []
+    for fuel_type, cost_per_km in FUEL_COSTS.items():
+        car_cost = round(distance_km * cost_per_km)
+        car_time = round(distance_km / 55, 1)  # 55 km/hr avg
+        car_co2 = round(distance_km * FUEL_EMISSIONS[fuel_type], 1)
+        
+        car_options.append({
+            "fuel_type": fuel_type,
+            "estimated_cost": car_cost,
+            "cost_per_km": cost_per_km,
+            "time_hours": car_time,
+            "co2_kg": car_co2,
+            "comfort_rating": 5,
+            "pros": ["Most comfortable", "Flexible timing", "Door-to-door"],
+            "cons": ["Long drive", "Tiring for driver"]
+        })
+
+    # Other transport options
+    flight_cost_min = 4500
+    flight_cost_max = 8000
+    flight_time = 2
+    flight_co2 = round(distance_km * 0.15, 1)
+
+    train_cost_min = 800
+    train_cost_max = 2500
+    train_time = round(distance_km / 45, 1)
+    train_co2 = round(distance_km * 0.04, 1)
+
+    bus_cost_min = 1200
+    bus_cost_max = 1800
+    bus_time = round(distance_km / 40, 1)
+    bus_co2 = round(distance_km * 0.09, 1)
+
+    # All Options Summary
+    options = [
+        {
+            "mode": "car",
+            "fuel_options": car_options  # All fuel types shown here
+        },
+        {
+            "mode": "flight",
+            "estimated_cost_min": flight_cost_min,
+            "estimated_cost_max": flight_cost_max,
+            "time_hours": flight_time,
+            "co2_kg": flight_co2,
+            "comfort_rating": 5,
+            "pros": ["Fastest", "Time-saving"],
+            "cons": ["Expensive", "Airport travel"],
+        },
+        {
+            "mode": "train",
+            "estimated_cost_min": train_cost_min,
+            "estimated_cost_max": train_cost_max,
+            "time_hours": train_time,
+            "co2_kg": train_co2,
+            "comfort_rating": 4,
+            "pros": ["Cheapest", "Comfortable", "Eco-friendly"],
+            "cons": ["Longer travel time"],
+        },
+        {
+            "mode": "bus",
+            "estimated_cost_min": bus_cost_min,
+            "estimated_cost_max": bus_cost_max,
+            "time_hours": bus_time,
+            "co2_kg": bus_co2,
+            "comfort_rating": 3,
+            "pros": ["Affordable", "Easily available"],
+            "cons": ["Less comfort", "Longer time"],
+        }
+    ]
+
+    # Find cheapest car option
+    cheapest_car = min(car_options, key=lambda x: x['estimated_cost'])
+    cheapest_car_cost = cheapest_car['estimated_cost']
+
+    # Recommendation Logic
+    cheapest_overall = min([cheapest_car_cost, train_cost_min, bus_cost_min, flight_cost_min])
+
+    if cheapest_overall == train_cost_min:
+        recommendation = {
+            "mode": "train",
+            "reason": "Best balance of cost & comfort",
+            "savings": cheapest_car_cost - train_cost_min
+        }
+    elif cheapest_overall == bus_cost_min:
+        recommendation = {
+            "mode": "bus",
+            "reason": "Cheapest option",
+            "savings": cheapest_car_cost - bus_cost_min
+        }
+    elif cheapest_overall == cheapest_car_cost:
+        recommendation = {
+            "mode": "car",
+            "fuel_type": cheapest_car['fuel_type'],
+            "reason": f"Most economical with {cheapest_car['fuel_type']} vehicle",
+            "cost": cheapest_car_cost,
+            "savings": 0
+        }
+    else:
+        recommendation = {
+            "mode": "flight",
+            "reason": "Fastest option available",
+            "savings": 0
+        }
+
+    return Response({
+        "distance_km": distance_km,
+        "options": options,
+        "recommendation": recommendation
+    })
+
