@@ -64,6 +64,7 @@ class Trip(models.Model):
     trip_purpose = models.CharField(max_length=50, choices=PURPOSE_CHOICES, blank=True, null=True)
     number_of_companions = models.IntegerField(default=0)
     
+    
     # Cost details
     ticket_cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     fuel_expense = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
@@ -399,4 +400,3 @@ class DailyStats(models.Model):
         
     def __str__(self):
         return f"{self.user.username} - {self.date} - Score: {self.score}"
-

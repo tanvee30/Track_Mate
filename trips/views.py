@@ -21,6 +21,8 @@ class TripViewSet(viewsets.ModelViewSet):
     serializer_class = TripSerializer
     permission_classes = [IsAuthenticated]
     
+
+    
     def get_queryset(self):
         return Trip.objects.filter(user=self.request.user)
     
@@ -1152,4 +1154,3 @@ def compare_routes(request):
         "options": options,
         "recommendation": recommendation
     })
-

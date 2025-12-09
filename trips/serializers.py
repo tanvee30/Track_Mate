@@ -519,4 +519,3 @@ class VehicleSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'vehicle_type', 'fuel_efficiency', 
                   'emissions_factor', 'fuel_price_per_liter', 'is_active']
         read_only_fields = ['id']
-

@@ -80,8 +80,10 @@ DATABASES = {
         "NAME": 'trackmate_db',
         "USER": 'trackmate_user',
         "PASSWORD": 'ATM263014@atm',
+        # "PASSWORD": 'postgres',
         "HOST": 'localhost',
         "PORT": '5432',
+        # "PORT": '5433',
     }
 }
 

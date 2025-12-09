@@ -17,6 +17,8 @@ urlpatterns = [
     path("compare-routes/", compare_routes, name="compare-routes"),
 ]
 
+
+
 # Available endpoints 
 # POST   /api/trips/start/                    - Start a new trip
 # POST   /api/trips/{id}/end/                 - End a trip

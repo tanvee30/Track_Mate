@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from .views import InviteFriendViewSet
 from .views import (
     ProfileView,
     TrustedContactViewSet,
@@ -10,10 +11,11 @@ from .views import (
 
 router = DefaultRouter()
 router.register("contacts", TrustedContactViewSet, basename="contacts")
+router.register(r'invite-friend', InviteFriendViewSet)
 
 urlpatterns = [
     path("", ProfileView.as_view()),
-    path("", include(router.urls)),
+    path("", include(router.urls)),   # keep only this
     path("aadhaar/", AadhaarVerificationView.as_view()),
     path("vehicle/", VehicleDetailsView.as_view()),
     path("full/", FullProfileView.as_view()),
